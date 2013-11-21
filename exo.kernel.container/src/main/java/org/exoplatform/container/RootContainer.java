@@ -401,7 +401,7 @@ public class RootContainer extends ExoContainer implements WebAppListener, Authe
             if (event instanceof WebAppLifeCycleEvent
                && ((WebAppLifeCycleEvent)event).getType() == WebAppLifeCycleEvent.ADDED)
             {
-               existingWebApp.add(ContainerUtil.getServletContextName(event.getWebApp().getServletContext()));
+               existingWebApp.add(event.getWebApp().getServletContext().getServletContextName());
             }
          }
       };
