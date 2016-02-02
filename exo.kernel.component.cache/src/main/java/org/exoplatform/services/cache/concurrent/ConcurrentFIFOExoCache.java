@@ -241,6 +241,7 @@ public class ConcurrentFIFOExoCache<K extends Serializable, V> implements ExoCac
 
    public void clearCache()
    {
+      state.clearCache();
       state = new CacheState<K, V>(this, log);
    }
 

@@ -181,4 +181,18 @@ class CacheState<K extends Serializable, V>
          return null;
       }
    }
+
+   /**
+    * Clear the cache
+    */
+   public void clearCache()
+   {
+      boolean trace = isTraceEnabled();
+      if (trace)
+      {
+         trace("clear cache data");
+      }
+      // Clear callback
+      config.onClearCache();
+   }
 }

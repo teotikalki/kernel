@@ -110,6 +110,16 @@ public class TestConcurrentCache extends TestCase
       cache.assertGet("Foo", v1).assertEmpty();
    }
 
+   public void testOnClearCache()
+   {
+      CacheHelper<String, Object> cache = new CacheHelper<String, Object>();
+      cache.put("Foo", v1);
+      cache.put("Bar", v2);
+      assertEquals(2, cache.getCacheSize());
+      cache.clearCache();
+      cache.assertClear();
+   }
+
    public void testCacheSize()
    {
       CacheHelper<String, Object> cache = new CacheHelper<String, Object>();
@@ -317,7 +327,7 @@ public class TestConcurrentCache extends TestCase
       public CacheHelper assertClear()
       {
          assertFalse(events.isEmpty());
-         Event event = events.removeFirst();
+         Event event = events.removeLast();
          assertNotNull(event);
          assertTrue(event instanceof ClearEvent);
          return this;
