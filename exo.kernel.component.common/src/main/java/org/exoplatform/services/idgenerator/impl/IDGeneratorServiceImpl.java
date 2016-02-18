@@ -18,15 +18,12 @@
  */
 package org.exoplatform.services.idgenerator.impl;
 
-import org.exoplatform.commons.utils.SecurityHelper;
 import org.exoplatform.services.idgenerator.IDGeneratorService;
 import org.exoplatform.services.log.ExoLogger;
 import org.exoplatform.services.log.Log;
 
 import java.io.Serializable;
 import java.net.InetAddress;
-import java.security.PrivilegedAction;
-import java.security.SecureRandom;
 import java.util.Random;
 
 /**
@@ -41,147 +38,87 @@ public class IDGeneratorServiceImpl implements IDGeneratorService
     */
    private static final Log LOG = ExoLogger.getLogger("exo.kernel.component.common.IDGeneratorServiceImpl");
 
-   private static String hexServerIP_;
+   private static String hexServerIP_ = null;
 
-   private static IntegerFormatter integerFormatter;
+   private static final ThreadLocal<Random> SEEDER = new ThreadLocal<Random>() {
+                                                              @Override
+                                                              protected Random initialValue() {
+                                                                  return new Random();
+                                                              }
+                                                          };
 
-   static
-   {
-      SecurityHelper.doPrivilegedAction(new PrivilegedAction<Object>()
-      {
-         public Object run()
-         {
-            if ("IBM Corporation".equals(System.getProperty("java.vendor"))
-               && "1.8.0".equals(System.getProperty("java.version")))
-            {
-               //IBM JDK 8 workaround KER-308
-               integerFormatter = new J9IntegerFormatter();
-            }
-            else
-            {
-               integerFormatter = new IntegerFormatter();
-            }
-            return null;
-         }
-      });
-      InetAddress localInetAddress = null;
-      try
-      {
-         // get the inet address
-         localInetAddress = InetAddress.getLocalHost();
-         byte serverIP[] = localInetAddress.getAddress();
-         hexServerIP_ = hexFormat(getInt(serverIP), 8);
-      }
-      catch (java.net.UnknownHostException uhe)
-      {
-         LOG.fatal(uhe.getLocalizedMessage(), uhe);
-      }
-   }
-
-   private static final Random seeder_ = new SecureRandom();
-
-   public IDGeneratorServiceImpl()
-   {
-      if (hexServerIP_ == null)
-      {
-         throw new IllegalStateException("The local inet address could not be found");
-      }
-   }
-
-   public Serializable generateID(Object o)
+   public Serializable generateID(final Object o)
    {
       return generateStringID(o);
    }
 
-   public long generateLongID(Object o)
+   public long generateLongID(final Object o)
    {
-      String uuid = generateStringID(o);
+      final String uuid = generateStringID(o);
       return uuid.hashCode();
    }
 
-   public int generatIntegerID(Object o)
+   public int generatIntegerID(final Object o)
    {
-      String uuid = generateStringID(o);
+      final String uuid = generateStringID(o);
       return uuid.hashCode();
    }
 
-   public String generateStringID(Object o)
+   public String generateStringID(final Object o)
    {
-      return generateStringID(o, System.currentTimeMillis(), hexServerIP_, seeder_.nextInt());
-   }
+      final StringBuffer tmpBuffer = new StringBuffer(16);
+      if (hexServerIP_ == null) {
+        InetAddress localInetAddress = null;
+        try {
+          // get the inet address
+          localInetAddress = InetAddress.getLocalHost();
+        } catch (final java.net.UnknownHostException uhe) {
+          LOG.error(uhe.getLocalizedMessage(), uhe);
+          return null;
+        }
+        final byte serverIP[] = localInetAddress.getAddress();
+        hexServerIP_ = hexFormat(getInt(serverIP), 8);
+      }
+      final String hashcode = hexFormat(System.identityHashCode(o), 8);
+      tmpBuffer.append(hexServerIP_);
+      tmpBuffer.append(hashcode);
 
-   protected String generateStringID(Object o, long timeNow, String hexServerIP, int node)
-   {
-      StringBuilder guid = new StringBuilder(32);
-      int timeLow = (int)timeNow & 0xFFFFFFFF;
-      addHexFormat(guid, timeLow, 8);
-      guid.append(hexServerIP);
-      addHexFormat(guid, System.identityHashCode(o), 8);
-      addHexFormat(guid, node, 8);
+      final long timeNow = System.currentTimeMillis();
+      final int timeLow = (int) timeNow & 0xFFFFFFFF;
+      final int node = SEEDER.get().nextInt();
+
+      final StringBuffer guid = new StringBuffer(32);
+      guid.append(hexFormat(timeLow, 8));
+      guid.append(tmpBuffer.toString());
+      guid.append(hexFormat(node, 8));
       return guid.toString();
    }
 
-   private static int getInt(byte bytes[])
+   private static int getInt(final byte bytes[])
    {
       int i = 0;
       int j = 24;
-      for (int k = 0; j >= 0; k++)
-      {
-         int l = bytes[k] & 0xff;
-         i += l << j;
-         j -= 8;
+      for (int k = 0; j >= 0; k++) {
+        final int l = bytes[k] & 0xff;
+        i += l << j;
+        j -= 8;
       }
       return i;
    }
 
-   private static String hexFormat(int i, int j)
+   private static String hexFormat(final int i, final int j)
    {
-      StringBuilder buffer = new StringBuilder(j);
-      addHexFormat(buffer, i, j);
-      return buffer.toString();
+      final String s = Integer.toHexString(i);
+      return padHex(s, j) + s;
    }
 
-   private static void addHexFormat(StringBuilder buffer, int i, int j)
-   {
-      String s = integerFormatter.toHexString(i);
-      addPadHex(buffer, s, j);
-      buffer.append(s);
-   }
-
-   private static void addPadHex(StringBuilder buffer, String s, int i)
-   {
-      int length = s.length();
-      if (length < i)
-      {
-         for (int j = 0; j < i - length; j++)
-         {
-            buffer.append('0');
-         }
+   private static String padHex(final String s, final int i) {
+      final StringBuffer tmpBuffer = new StringBuffer();
+      if (s.length() < i) {
+        for (int j = 0; j < i - s.length(); j++) {
+          tmpBuffer.append('0');
+        }
       }
-   }
-
-   private static class IntegerFormatter
-   {
-      public String toHexString(int i)
-      {
-         return Integer.toHexString(i);
-      }
-   }
-
-   private static class J9IntegerFormatter extends IntegerFormatter
-   {
-      public String toHexString(int i)
-      {
-         final String hex = Integer.toHexString(i);
-         final int lastNul = hex.lastIndexOf('\u0000');
-         if (lastNul >= 0)
-         {
-            return hex.substring(lastNul + 1);
-         }
-         else
-         {
-            return hex;
-         }
-      }
-   }
+      return tmpBuffer.toString();
+    }
 }
