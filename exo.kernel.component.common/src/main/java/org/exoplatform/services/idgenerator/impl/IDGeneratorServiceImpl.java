@@ -60,7 +60,7 @@ public class IDGeneratorServiceImpl implements IDGeneratorService
 
    public int generatIntegerID(Object o)
    {
-      final String uuid = generateStringID(o);
+      String uuid = generateStringID(o);
       return uuid.hashCode();
    }
 
