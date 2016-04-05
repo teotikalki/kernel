@@ -47,24 +47,24 @@ public class IDGeneratorServiceImpl implements IDGeneratorService
                                                               }
                                                           };
 
-   public Serializable generateID(final Object o)
+   public Serializable generateID(Object o)
    {
       return generateStringID(o);
    }
 
-   public long generateLongID(final Object o)
+   public long generateLongID(Object o)
+   {
+      String uuid = generateStringID(o);
+      return uuid.hashCode();
+   }
+
+   public int generatIntegerID(Object o)
    {
       final String uuid = generateStringID(o);
       return uuid.hashCode();
    }
 
-   public int generatIntegerID(final Object o)
-   {
-      final String uuid = generateStringID(o);
-      return uuid.hashCode();
-   }
-
-   public String generateStringID(final Object o)
+   public String generateStringID(Object o)
    {
       final StringBuffer tmpBuffer = new StringBuffer(16);
       if (hexServerIP_ == null) {
@@ -94,7 +94,7 @@ public class IDGeneratorServiceImpl implements IDGeneratorService
       return guid.toString();
    }
 
-   private static int getInt(final byte bytes[])
+   private static int getInt(byte bytes[])
    {
       int i = 0;
       int j = 24;
@@ -106,13 +106,13 @@ public class IDGeneratorServiceImpl implements IDGeneratorService
       return i;
    }
 
-   private static String hexFormat(final int i, final int j)
+   private static String hexFormat(int i, int j)
    {
       final String s = Integer.toHexString(i);
       return padHex(s, j) + s;
    }
 
-   private static String padHex(final String s, final int i) {
+   private static String padHex(String s, int i) {
       final StringBuffer tmpBuffer = new StringBuffer();
       if (s.length() < i) {
         for (int j = 0; j < i - s.length(); j++) {
