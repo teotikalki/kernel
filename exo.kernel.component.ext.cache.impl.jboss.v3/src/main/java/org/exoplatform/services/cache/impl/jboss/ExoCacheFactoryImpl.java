@@ -18,6 +18,14 @@
  */
 package org.exoplatform.services.cache.impl.jboss;
 
+import java.io.Serializable;
+import java.security.PrivilegedAction;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import javax.management.ObjectName;
 import org.exoplatform.commons.utils.SecurityHelper;
 import org.exoplatform.container.ExoContainer;
 import org.exoplatform.container.ExoContainerContext;
@@ -35,21 +43,10 @@ import org.exoplatform.services.log.Log;
 import org.jboss.cache.Cache;
 import org.jboss.cache.CacheFactory;
 import org.jboss.cache.config.Configuration;
-import org.jboss.cache.config.Configuration.CacheMode;
 import org.jboss.cache.config.EvictionConfig;
 import org.jboss.cache.config.EvictionRegionConfig;
 import org.jboss.cache.jmx.JmxRegistrationManager;
 import org.picocontainer.Startable;
-
-import java.io.Serializable;
-import java.security.PrivilegedAction;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
-
-import javax.management.ObjectName;
 
 /**
  * This class is the JBoss Cache implementation of the {@link org.exoplatform.services.cache.ExoCacheFactory}
@@ -183,11 +180,6 @@ public class ExoCacheFactoryImpl implements ExoCacheFactory, Startable
 
             cache =
                PrivilegedCacheHelper.createCache(factory, configManager.getInputStream(cacheConfigTemplate), false);
-            if (!config.isDistributed())
-            {
-               // The cache is local
-               cache.getConfiguration().setCacheMode(CacheMode.LOCAL);
-            }
             // Re initialize the template to avoid conflicts
             cleanConfigurationTemplate(cache, region);
          }
